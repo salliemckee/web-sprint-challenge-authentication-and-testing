@@ -3,7 +3,10 @@ const { JWT_SECRET } = require("../secrets");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../auth/user-model");
-const { checkUsernameFree } = require("../middleware/auth-middleware");
+const {
+  checkUsernameFree,
+  checkUsernameExists,
+} = require("../middleware/auth-middleware");
 
 router.post("/register", checkUsernameFree, (req, res, next) => {
   // res.end("implement register, please!");
@@ -34,15 +37,20 @@ router.post("/register", checkUsernameFree, (req, res, next) => {
   */
   const { username, password } = req.body;
   const hash = bcrypt.hashSync(password, 8);
-  User.add({ username, password: hash })
-    .then((newUser) => {
-      res.status(201).json(newUser);
-    })
-    .catch(next);
+
+  if (!username || !password) {
+    res.status(422).json("username and password required");
+  } else {
+    User.add({ username, password: hash })
+      .then((newUser) => {
+        res.status(201).json(newUser);
+      })
+      .catch(next);
+  }
 });
 
-router.post("/login", (req, res) => {
-  res.end("implement login, please!");
+router.post("/login", checkUsernameExists, (req, res, next) => {
+  // res.end("implement login, please!");
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -66,6 +74,27 @@ router.post("/login", (req, res) => {
     4- On FAILED login due to `username` not existing in the db, or `password` being incorrect,
       the response body should include a string exactly as follows: "invalid credentials".
   */
+  const { username, password } = req.body;
+  if (bcrypt.compareSync(password, req.user.password)) {
+    const token = buildToken(req.user);
+    req.session.user = req.user;
+    res.json({ message: `welcome ${req.user.username}`, token });
+  } else if (!username || !password) {
+    res.status(422).json("username and password required");
+  } else {
+    next({ status: 401, message: "invalid credentials" });
+  }
 });
+
+function buildToken(user) {
+  const payload = {
+    subject: user.user_underscore_id,
+    username: user.username,
+  };
+  const options = {
+    expiresIn: "id",
+  };
+  return jwt.sign(payload, JWT_SECRET, options);
+}
 
 module.exports = router;
