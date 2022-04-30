@@ -8,11 +8,12 @@ function findBy(filter) {
   return db("users").where(filter);
 }
 
+function findByUsername(username) {
+  return db("users").where("username", username);
+}
+
 function findById(user_id) {
-  return db("users")
-    .select("user_id", "username")
-    .where("user_id", user_id)
-    .first();
+  return db("users").where("user_id", user_id).first();
 }
 
 async function add(user) {
@@ -20,4 +21,4 @@ async function add(user) {
   return findById(id);
 }
 
-module.exports = { find, findBy, findById, add };
+module.exports = { find, findBy, findById, add, findByUsername };

@@ -1,5 +1,4 @@
 const User = require("../auth/user-model");
-const { findBy } = require("../auth/user-model");
 
 async function checkUsernameFree(req, res, next) {
   try {
@@ -7,24 +6,11 @@ async function checkUsernameFree(req, res, next) {
     if (!users.length) {
       next();
     } else {
-      next({ message: "username taken", status: 422 });
+      res.status(422).json({ message: "username taken" });
     }
   } catch (err) {
     next(err);
   }
 }
 
-const checkUsernameExists = async (req, res, next) => {
-  try {
-    const [user] = await findBy({ username: req.body.username });
-    if (!user) {
-      next({ status: 401, message: "invalid credentials" });
-    } else {
-      req.user = user;
-    }
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports = { checkUsernameFree, checkUsernameExists };
+module.exports = { checkUsernameFree };
