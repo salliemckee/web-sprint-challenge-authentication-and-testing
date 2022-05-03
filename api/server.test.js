@@ -37,7 +37,7 @@ describe(`[POST] - /api/auth/register`, () => {
       .post("/api/auth/register")
       .send({ username: "zuko" });
     expect(res.body.message).toMatch(/username and password required/i);
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
   });
 });
 

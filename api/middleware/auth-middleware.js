@@ -23,7 +23,7 @@ function checkCredentials(req, res, next) {
     !password ||
     password.trim() === null
   ) {
-    res.status(422).json({
+    res.status(400).json({
       message: `username and password required`,
     });
   } else {
