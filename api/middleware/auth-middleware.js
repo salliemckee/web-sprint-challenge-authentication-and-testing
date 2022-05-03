@@ -5,7 +5,7 @@ function checkUsernameFree(req, res, next) {
   const username = req.body.username;
   User.findBy({ username }).then(([user]) => {
     if (user) {
-      res.status(422).json({
+      res.status(400).json({
         message: `username taken`,
       });
     } else {
