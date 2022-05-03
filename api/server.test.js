@@ -18,59 +18,59 @@ test("sanity", () => {
   expect(true).toBe(true);
 });
 
-describe(`[POST] /api/auth/register`, () => {
-  it(`creates a user given valid information`, async () => {
+describe(`[POST] - /api/auth/register`, () => {
+  it(`creates a user with valid credentials`, async () => {
     await request(server)
       .post("/api/auth/register")
-      .send({ username: "I Am Groot", password: "I Am Groot" });
-    let groot = await db("users").where("username", "I Am Groot").first();
-    expect(bcrypt.compareSync("I Am Groot", groot.password)).toBeTruthy();
-    groot = await db("users")
-      .where("username", "I Am Groot")
+      .send({ username: "sallie", password: "sallie" });
+    let sallieTest = await db("users").where("username", "sallie").first();
+    expect(bcrypt.compareSync("sallie", sallieTest.password)).toBeTruthy();
+    sallieTest = await db("users")
+      .where("username", "sallie")
       .select("username")
       .first();
-    expect(groot).toEqual({ username: "I Am Groot" });
+    expect(sallieTest).toEqual({ username: "sallie" });
   });
 
   it(`requires a valid username and password to register`, async () => {
     let res = await request(server)
       .post("/api/auth/register")
-      .send({ username: "Rocket Raccoon" });
+      .send({ username: "zuko" });
     expect(res.body.message).toMatch(/username and password required/i);
     expect(res.status).toBe(422);
   });
 });
 
-describe(`[POST] /api/auth/login`, () => {
+describe(`[POST] - /api/auth/login`, () => {
   beforeEach(async () => {
     await db("users").insert([
-      { username: "I Am Groot", password: bcrypt.hashSync("I Am Groot", 8) },
+      { username: "sallie", password: bcrypt.hashSync("sallie", 8) },
       {
-        username: "Rocket Raccoon",
-        password: bcrypt.hashSync("NotARabbit", 8),
+        username: "zuko",
+        password: bcrypt.hashSync("zuko", 8),
       },
     ]);
   });
 
-  it(`permits a user to log in with proper credentials`, async () => {
+  it(`user can log in with valid credentials`, async () => {
     let res = await request(server)
       .post("/api/auth/login")
-      .send({ username: "I Am Groot", password: "I Am Groot" });
-    expect(res.body.message).toMatch(/welcome, I Am Groot/i);
+      .send({ username: "sallie", password: "sallie" });
+    expect(res.body.message).toMatch(/welcome, sallie/i);
     res = await request(server)
       .post("/api/auth/login")
-      .send({ username: "Rocket Raccoon", password: "NotARabbit" });
-    expect(res.body.message).toMatch(/welcome, Rocket Raccoon/i);
+      .send({ username: "zuko", password: "zuko" });
+    expect(res.body.message).toMatch(/welcome, zuko/i);
   });
 
   it(`requires a valid username and password to log in`, async () => {
     let res = await request(server)
       .post("/api/auth/login")
-      .send({ username: "I Am Groot", password: "I AM Groot" });
+      .send({ username: "sallie", password: "SaLlIe" });
     expect(res.body.message).toMatch(/invalid credentials/i);
     res = await request(server)
       .post("/api/auth/login")
-      .send({ username: "Rocket Raccoon" });
+      .send({ username: "zuko" });
     expect(res.body.message).toMatch(/username and password required/i);
   });
 });
@@ -78,23 +78,23 @@ describe(`[POST] /api/auth/login`, () => {
 describe(`[GET] /api/jokes`, () => {
   beforeEach(async () => {
     await db("users").insert([
-      { username: "I Am Groot", password: bcrypt.hashSync("I Am Groot", 8) },
+      { username: "sallie", password: bcrypt.hashSync("sallie", 8) },
       {
-        username: "Rocket Raccoon",
-        password: bcrypt.hashSync("NotARabbit", 8),
+        username: "zuko",
+        password: bcrypt.hashSync("zuko", 8),
       },
     ]);
   });
 
-  it(`permits a user to view the jokes when logged in`, async () => {
+  it(`user can view jokes while logged in`, async () => {
     const login = await request(server)
       .post("/api/auth/login")
-      .send({ username: "I Am Groot", password: "I Am Groot" });
-    let getJokes = await request(server)
+      .send({ username: "sallie", password: "sallie" });
+    let jokes = await request(server)
       .get("/api/jokes")
       .set("Authorization", login.body.token);
-    expect(getJokes.body).toHaveLength(3);
-    expect(getJokes.body).toMatchObject([
+    expect(jokes.body).toHaveLength(3);
+    expect(jokes.body).toMatchObject([
       {
         id: "0189hNRf2g",
         joke: "I'm tired of following my dreams. I'm just going to ask them where they are going and meet up with them later.",
@@ -110,16 +110,16 @@ describe(`[GET] /api/jokes`, () => {
     ]);
   });
 
-  it(`denies access to jokes when not logged in`, async () => {
-    let getJokes = await request(server).get("/api/jokes");
-    expect(getJokes.body.message).toMatch(/token required/i);
+  it(`blocks access to jokes when not logged in`, async () => {
+    let jokes = await request(server).get("/api/jokes");
+    expect(jokes.body.message).toMatch(/token required/i);
 
     const login = await request(server)
       .post("/api/auth/login")
-      .send({ username: "I Am Groot", password: "I Am Groot" });
-    getJokes = await request(server)
+      .send({ username: "sallie", password: "sallie" });
+    jokes = await request(server)
       .get("/api/jokes")
       .set("Authorization", login.body.token + 42);
-    expect(getJokes.body.message).toMatch(/token invalid/i);
+    expect(jokes.body.message).toMatch(/token invalid/i);
   });
 });

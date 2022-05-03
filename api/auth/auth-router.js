@@ -1,38 +1,49 @@
 const router = require("express").Router();
-const { JWT_SECRET } = require("../secrets");
+const {
+  checkUsernameFree,
+  checkCredentials,
+  checkRegisteredUser,
+} = require("../middleware/auth-middleware");
+const User = require("./user-model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("./user-model");
-const { checkUsernameFree } = require("../middleware/auth-middleware");
+const { JWT_SECRET } = require("../secrets");
 
-router.post("/register", checkUsernameFree, (req, res, next) => {
-  if (!req.body.username || !req.body.password) {
-    res.status(422).json({ message: "username and password required" });
-  } else {
-    const hash = bcrypt.hashSync(req.body.password, 8);
-    User.add({ username: req.body.username, password: hash })
-      .then((newUser) => {
-        res.status(201).json(newUser);
+router.post(
+  "/register",
+  checkUsernameFree,
+  checkCredentials,
+  (req, res, next) => {
+    const { username, password } = req.body;
+    const trimUser = username.trim();
+    const hash = bcrypt.hashSync(password, 8);
+
+    User.add({ username: trimUser, password: hash })
+      .then((user) => {
+        res.status(201).json(user);
       })
       .catch(next);
   }
-});
+);
 
-router.post("/login", (req, res, next) => {
-  if (!req.body.username || !req.body.password) {
-    res.status(422).json({ message: "username and password required" });
-  } else {
-    const username = req.body.username;
-    User.findByUsername(username)
+router.post(
+  "/login",
+  checkCredentials,
+  checkRegisteredUser,
+  (req, res, next) => {
+    const { username } = req.body;
+
+    User.findBy({ username })
       .then(([user]) => {
         const token = buildToken(user);
-        if (bcrypt.compareSync(req.body.password, user.password)) {
-          res.json({ message: `welcome ${req.body.username}`, token });
-        }
+        res.json({
+          message: `welcome, ${user.username}`,
+          token,
+        });
       })
-      .catch(res.status(401).json({ message: "invalid credentials" }));
+      .catch(next);
   }
-});
+);
 
 function buildToken(user) {
   const payload = {
